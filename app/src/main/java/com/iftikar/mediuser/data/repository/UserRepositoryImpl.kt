@@ -4,6 +4,7 @@ import android.util.Log
 import com.iftikar.mediuser.data.remote.ApiOperation
 import com.iftikar.mediuser.data.remote.ApiService
 import com.iftikar.mediuser.domain.model.LoginResponse
+import com.iftikar.mediuser.domain.model.User
 import com.iftikar.mediuser.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -32,10 +33,34 @@ class UserRepositoryImpl @Inject constructor(private val apiService: ApiService)
                 emit(ApiOperation.Failure(HttpException(response)))
             }
         } catch (e: IOException) {
-            emit(ApiOperation.Failure(e))
+            Log.e("Response-Error_IO", e.message ?: "Unwon")
+            emit(ApiOperation.Failure(IOException("Please check your internet connection")))
         } catch (e: HttpException) {
-            emit(ApiOperation.Failure(e))
+            Log.e("Response-Error", e.message())
+           // emit(ApiOperation.Failure(e))
         } catch (e: Exception) {
+            Log.e("Response-Error_Nor", e.message ?: "Unwon")
+            emit(ApiOperation.Failure(e))
+        }
+    }
+
+    override fun getSpecificUser(userId: String): Flow<ApiOperation<User>> = flow {
+        try {
+            val response = apiService.getSpecificUser(userId = userId)
+            if (response.isSuccessful) {
+                val users = response.body()
+                val user = users?.lastOrNull() ?: run {
+                    emit(ApiOperation.Failure(NullPointerException("User not found")))
+                    return@flow
+                }
+                Log.d("Repo-User", user.isApproved.toString())
+                emit(ApiOperation.Success(user))
+            } else {
+                Log.e("User-Error", response.message())
+                emit(ApiOperation.Failure(HttpException(response)))
+            }
+        } catch (e: Exception) {
+            Log.e("User-Error_Out", e.message ?: "Unknown error")
             emit(ApiOperation.Failure(e))
         }
     }

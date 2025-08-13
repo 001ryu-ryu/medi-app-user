@@ -19,5 +19,5 @@ interface ApiService {
     @POST("getSpecificUser")
     suspend fun getSpecificUser(
         @Field("user_id") userId: String
-    ): Response<User>
+    ): Response<List<User>>
 }
