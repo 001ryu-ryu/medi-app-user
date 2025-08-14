@@ -221,7 +221,7 @@ fun LoginScreen(
                         )
                         LaunchedEffect(Unit) {
                             navHostController.navigate(Routes.WaitingScreen(viewState.loginResponse.message)) {
-                                popUpTo(Routes.LoginScreen) { inclusive = true }
+                                popUpTo<Routes.LoginScreen> { inclusive = true }
                             }
                         }
                     }
