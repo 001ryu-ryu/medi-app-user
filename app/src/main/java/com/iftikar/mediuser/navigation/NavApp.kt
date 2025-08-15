@@ -9,7 +9,7 @@ import com.iftikar.mediuser.domain.model.User
 import com.iftikar.mediuser.presentation.screens.home_screen.HomeScreen
 import com.iftikar.mediuser.presentation.screens.login_screen.LoginScreen
 import com.iftikar.mediuser.presentation.screens.waiting_screen.WaitingScreen
-import com.iftikar.mediuser.util.CustomNavType
+import com.iftikar.mediuser.navigation.CustomNavType
 import kotlin.reflect.typeOf
 
 @Composable

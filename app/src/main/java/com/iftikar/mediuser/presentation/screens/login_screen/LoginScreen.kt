@@ -27,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,17 +59,24 @@ fun LoginScreen(
     navHostController: NavHostController
 ) {
     val state = loginViewModel.loginState.collectAsStateWithLifecycle()
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var buttonText by remember { mutableStateOf("") }
+    val eventState by loginViewModel.eventState.collectAsState(initial = LoginEvent.Idle)
 
     var isPasswordVisible by remember { mutableStateOf(false) }
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
 
-    var buttonTextColor by remember { mutableStateOf<Color>(Color.Black) }
-
-    var loginErrorText by remember { mutableStateOf("") }
+    LaunchedEffect(key1 = eventState) {
+        when(eventState) {
+            is LoginEvent.Navigate -> {
+                navHostController.navigate(Routes.WaitingScreen(userId = (eventState as LoginEvent.Navigate).userId)) {
+                    popUpTo<Routes.LoginScreen> {
+                        inclusive = true
+                    }
+                }
+            }
+            else -> {}
+        }
+    }
 
     // Animated background gradient that adapts to the current Material theme
     val infiniteTransition = rememberInfiniteTransition(label = "bgTransition")
@@ -131,10 +139,12 @@ fun LoginScreen(
                 )
 
                 TextFieldComponent(
-                    value = email,
+                    value = state.value.email,
                     onTextChange = {
                         emailError = null
-                        email = it
+                        loginViewModel.onEvent(
+                            LoginEvent.EnterEmail(it)
+                        )
                     },
                     title = if (emailError != null) emailError else "Email",
                     color = if (emailError != null) Color.Red else Color.Unspecified,
@@ -149,10 +159,12 @@ fun LoginScreen(
                 Spacer(Modifier.height(10.dp))
 
                 TextFieldComponent(
-                    value = password,
+                    value = state.value.password,
                     onTextChange = {
                         passwordError = null
-                        password = it
+                        loginViewModel.onEvent(
+                            LoginEvent.EnterPassword(it)
+                        )
                     },
                     title = if (passwordError != null) passwordError else "Password",
                     visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -177,54 +189,39 @@ fun LoginScreen(
                     }
                 )
 
+                val buttonText = when {
+                    state.value.isLoading -> "Logging in"
+                    state.value.error != null -> "Try Again"
+                    else -> "Login"
+                }
+                val buttonTextColor = if (state.value.error != null) Color.Red else Color.Black
+
                 LoginButtonComponent(
                     text = buttonText,
                     textColor = buttonTextColor
                 ) {
-                    if (email.isBlank() || password.isBlank()) {
-                            if (email.isBlank()) {
+                    if (state.value.isLoading) return@LoginButtonComponent // Prevent duplicate clicks during loading
+                    if (state.value.email.isBlank() || state.value.password.isBlank()) {
+                            if (state.value.email.isBlank()) {
                                 emailError = "Please enter your email"
                             }
-                            if (password.isBlank()) {
+                            if (state.value.password.isBlank()) {
                                 passwordError = "Please enter your password"
                             }
                             return@LoginButtonComponent
                         }
+                    loginViewModel.login()
 
-                        loginViewModel.login(email, password)
                 }
 
-                Text(text = loginErrorText, color = Color.Red)
+                if (state.value.isLoading) {
+                    Spacer(Modifier.height(12.dp))
+                    androidx.compose.material3.CircularProgressIndicator()
+                }
 
-                when (val viewState = state.value) {
-                    is LoginState.Error -> {
-                        loginErrorText = viewState.message
-                        buttonText = "Try again"
-                        buttonTextColor = Color.Red
-                    }
-
-                    LoginState.Idle -> {
-                        buttonText = "log in"
-                        buttonTextColor = Color.Black
-                    }
-
-                    LoginState.Loading -> {
-                        buttonText = "logging in"
-                        buttonTextColor = Color.Black
-                        loginErrorText = ""
-                    }
-
-                    is LoginState.Success -> {
-                        Log.d(
-                            "Login",
-                            "${viewState.loginResponse.message}: ${viewState.loginResponse.status}"
-                        )
-                        LaunchedEffect(Unit) {
-                            navHostController.navigate(Routes.WaitingScreen(viewState.loginResponse.message)) {
-                                popUpTo<Routes.LoginScreen> { inclusive = true }
-                            }
-                        }
-                    }
+                state.value.error?.let { errorMessage ->
+                    Spacer(Modifier.height(8.dp))
+                    Text(text = errorMessage, color = Color.Red)
                 }
             }
         }
