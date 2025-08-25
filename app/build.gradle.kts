@@ -66,6 +66,9 @@ dependencies {
     // serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
+    // Pref datastore
+    implementation ("androidx.datastore:datastore-preferences:1.1.7")
+
     implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

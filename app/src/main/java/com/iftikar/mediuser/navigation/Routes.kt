@@ -11,4 +11,7 @@ sealed class Routes {
     data class WaitingScreen(val userId: String) : Routes()
     @Serializable
     data class HomeScreen(val user: User) : Routes()
+
+    @Serializable
+    data object SplashScreen : Routes()
 }
